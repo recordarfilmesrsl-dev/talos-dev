@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -7,14 +8,26 @@ import {
   Users,
   DollarSign,
   Settings,
-  ChevronRight,
   Zap,
   UserCheck,
-  ArrowRightLeft
+  ArrowRightLeft,
+  FileText,
+  Briefcase,
+  ClipboardList,
+  FolderKanban
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-import { useState } from 'react';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarFooter,
+} from '@/components/ui/sidebar';
 
 const menuGroups = [
   {
@@ -29,6 +42,10 @@ const menuGroups = [
     label: 'Gestão',
     items: [
       { icon: UserCheck, label: 'Clientes', href: '/clients' },
+      { icon: FolderKanban, label: 'Projetos', href: '/projects' },
+      { icon: Briefcase, label: 'Funcionários', href: '/employees' },
+      { icon: ClipboardList, label: 'Tarefas', href: '/tasks' },
+      { icon: FileText, label: 'Contratos', href: '/contracts' },
       { icon: DollarSign, label: 'Financeiro', href: '/billing' },
     ]
   },
@@ -41,90 +58,64 @@ const menuGroups = [
   }
 ];
 
-export function Sidebar() {
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
-    'Menu Principal': true,
-    'Unidades de Negócio': true,
-    'Configurações': true,
-  });
-
-  const toggleGroup = (label: string) => {
-    setExpandedGroups(prev => ({
-      ...prev,
-      [label]: !prev[label]
-    }));
-  };
 
   return (
-    <aside className="w-64 h-screen bg-[#020617] border-r border-slate-800 flex flex-col fixed left-0 top-0 z-50">
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-          <Zap className="text-white w-5 h-5 fill-white" />
+    <Sidebar className="border-r border-zinc-900 bg-black" {...props}>
+      <SidebarHeader className="p-6">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-zinc-100 text-black rounded-lg flex items-center justify-center">
+            <Zap className="text-white w-5 h-5 fill-white" />
+          </div>
+          <span className="text-xl font-bold tracking-tight text-white">Talos ERP</span>
         </div>
-        <span className="text-xl font-bold tracking-tight text-white">Talos ERP</span>
-      </div>
+      </SidebarHeader>
 
-      <nav className="flex-1 px-4 overflow-y-auto">
-        {menuGroups.map((group, idx) => {
-          const isExpanded = expandedGroups[group.label];
-          return (
-            <div key={group.label} className={cn("mb-6", idx === 0 ? "mt-0" : "mt-6")}>
-              <button
-                onClick={() => toggleGroup(group.label)}
-                className="w-full flex items-center justify-between px-3 mb-2 group-hover:text-slate-300 transition-colors"
-              >
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  {group.label}
-                </p>
-                <ChevronRight
-                  className={cn(
-                    "w-3 h-3 text-slate-500 transition-transform duration-200",
-                    isExpanded ? "rotate-90" : ""
-                  )}
-                />
-              </button>
-
-              <div className={cn(
-                "space-y-1 overflow-hidden transition-all duration-300 ease-in-out",
-                isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-              )}>
-                {group.items.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
+      <SidebarContent className="px-4">
+        {menuGroups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-3 mb-2">
+              {group.label}
+            </SidebarGroupLabel>
+            <SidebarMenu>
+              {group.items.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      render={<Link href={item.href} />}
+                      isActive={isActive}
                       className={cn(
-                        "flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group",
+                        "flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group w-full",
                         isActive
-                          ? "bg-blue-600/10 text-blue-500"
-                          : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+                          ? "bg-zinc-900 text-white font-medium"
+                          : "text-zinc-400 hover:bg-zinc-900/40 hover:text-white"
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        <item.icon className={cn("w-5 h-5", isActive ? "text-blue-500" : "text-slate-400 group-hover:text-slate-200")} />
+                        <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-zinc-400 group-hover:text-white")} />
                         <span className="font-medium">{item.label}</span>
                       </div>
-                      {isActive && <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </nav>
+                      {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white ml-auto" />}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroup>
+        ))}
+      </SidebarContent>
 
-      <div className="p-4 mt-auto">
-        <div className="bg-slate-900/50 rounded-2xl p-4 border border-slate-800">
-          <p className="text-xs text-slate-500 font-medium mb-1">Status do Sistema</p>
+      <SidebarFooter className="p-4 mt-auto">
+        <div className="bg-zinc-950/50 rounded-2xl p-4 border border-zinc-900">
+          <p className="text-xs text-zinc-500 font-medium mb-1">Status do Sistema</p>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-sm text-slate-300 font-medium">Operacional</span>
+            <span className="text-sm text-zinc-300 font-medium">Operacional</span>
           </div>
         </div>
-      </div>
-    </aside>
+      </SidebarFooter>
+    </Sidebar>
   );
 }
