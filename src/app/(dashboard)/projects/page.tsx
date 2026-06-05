@@ -593,7 +593,7 @@ export default function ProjectsPage() {
             <div className="grid grid-cols-2 gap-4">
               {/* Orçamento */}
               <div className="space-y-1.5">
-                <Label htmlFor="budget">Orçamento (R$)</Label>
+                <Label htmlFor="budget">Orçamento (R$) (Opcional)</Label>
                 <Input
                   id="budget"
                   type="number"
@@ -625,7 +625,7 @@ export default function ProjectsPage() {
             <div className="grid grid-cols-2 gap-4">
               {/* Data Início */}
               <div className="space-y-1.5">
-                <Label htmlFor="startDate">Data de Início</Label>
+                <Label htmlFor="startDate">Data de Início (Opcional)</Label>
                 <Input
                   id="startDate"
                   type="date"
@@ -637,7 +637,7 @@ export default function ProjectsPage() {
 
               {/* Data Fim */}
               <div className="space-y-1.5">
-                <Label htmlFor="endDate">Previsão de Entrega</Label>
+                <Label htmlFor="endDate">Previsão de Entrega (Opcional)</Label>
                 <Input
                   id="endDate"
                   type="date"

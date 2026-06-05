@@ -13,6 +13,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   Table,
@@ -63,7 +64,7 @@ export default function EmployeesPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState('developer');
-  const [status, setStatus] = useState('active');
+  const [status, setStatus] = useState('pending');
 
   const fetchEmployees = useCallback(async () => {
     try {
@@ -102,7 +103,7 @@ export default function EmployeesPage() {
       setEmail('');
       setPhone('');
       setRole('developer');
-      setStatus('active');
+      setStatus('pending');
     }
     setIsModalOpen(true);
   };
@@ -111,9 +112,11 @@ export default function EmployeesPage() {
     e.preventDefault();
     setIsSaving(true);
     try {
+      let savedEmployee = null;
+
       if (editingEmployee) {
         // Update employee
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('employees')
           .update({
             first_name: firstName,
@@ -123,12 +126,16 @@ export default function EmployeesPage() {
             role: role,
             status: status
           })
-          .eq('id', editingEmployee.id);
+          .eq('id', editingEmployee.id)
+          .select()
+          .single();
 
         if (error) throw error;
+        savedEmployee = data;
+        toast.success('Funcionário atualizado com sucesso!');
       } else {
         // Create employee
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('employees')
           .insert([
             {
@@ -139,16 +146,80 @@ export default function EmployeesPage() {
               role: role,
               status: status
             }
-          ]);
+          ])
+          .select()
+          .single();
 
         if (error) throw error;
+        savedEmployee = data;
+        toast.success('Funcionário cadastrado com sucesso!');
+
+        // Trigger email invitation and webhook for new employees
+        if (savedEmployee) {
+          const confirmationLink = `${window.location.origin}/employees/confirm?id=${savedEmployee.id}`;
+
+          // 1. Send invitation email directly via our Gmail SMTP API Route
+          fetch('/api/send-invite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: savedEmployee.email,
+              firstName: savedEmployee.first_name,
+              lastName: savedEmployee.last_name,
+              role: savedEmployee.role,
+              confirmationLink: confirmationLink
+            })
+          })
+          .then(async (res) => {
+            if (res.ok) {
+              toast.success('E-mail de convite enviado via Gmail!');
+            } else {
+              const resData = await res.json();
+              toast.error(resData.error || 'Erro ao enviar e-mail de convite.');
+            }
+          })
+          .catch(err => {
+            console.error('Email API Error:', err);
+            toast.error('Erro de rede ao enviar e-mail de convite.');
+          });
+
+          // 2. Trigger n8n webhook for other automations
+          try {
+            const { data: settingsData } = await supabase.from('settings').select('n8n_webhook_url').limit(1);
+            const webhookUrl = settingsData?.[0]?.n8n_webhook_url;
+            if (webhookUrl) {
+              fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  event_type: 'employee_invited',
+                  id: savedEmployee.id,
+                  first_name: savedEmployee.first_name,
+                  last_name: savedEmployee.last_name,
+                  email: savedEmployee.email,
+                  phone: savedEmployee.phone,
+                  role: savedEmployee.role,
+                  status: savedEmployee.status,
+                  confirmation_link: confirmationLink,
+                  timestamp: new Date().toISOString()
+                })
+              }).catch(err => console.error('n8n Webhook Error:', err));
+            }
+          } catch (webhookErr) {
+            console.error('Error fetching webhook setting:', webhookErr);
+          }
+        }
       }
       
       await fetchEmployees();
       setIsModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving employee:', err);
-      alert('Erro ao salvar funcionário. Verifique se o e-mail já está cadastrado.');
+      if (err.code === '23505') {
+        toast.error('Erro ao salvar funcionário. Este e-mail já está cadastrado.');
+      } else {
+        toast.error(err.message || 'Erro ao salvar funcionário.');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -160,9 +231,10 @@ export default function EmployeesPage() {
       const { error } = await supabase.from('employees').delete().eq('id', id);
       if (error) throw error;
       setEmployees(prev => prev.filter(emp => emp.id !== id));
+      toast.success('Funcionário removido com sucesso!');
     } catch (err) {
       console.error('Error deleting employee:', err);
-      alert('Erro ao deletar funcionário.');
+      toast.error('Erro ao deletar funcionário.');
     }
   };
 
@@ -281,9 +353,11 @@ export default function EmployeesPage() {
                         "border text-[10px] uppercase font-bold",
                         emp.status === 'active' 
                           ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                          : "bg-zinc-500/10 text-zinc-500 border-zinc-800"
+                          : emp.status === 'pending'
+                            ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                            : "bg-zinc-500/10 text-zinc-500 border-zinc-800"
                       )}>
-                        {emp.status === 'active' ? 'Ativo' : 'Inativo'}
+                        {emp.status === 'active' ? 'Ativo' : emp.status === 'pending' ? 'Pendente' : 'Inativo'}
                       </Badge>
                     </TableCell>
 
@@ -400,12 +474,13 @@ export default function EmployeesPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="status">Status</Label>
-                  <Select value={status} onValueChange={(val) => setStatus(val || 'active')}>
+                  <Select value={status} onValueChange={(val) => setStatus(val || 'pending')}>
                     <SelectTrigger className="bg-black border-zinc-900 text-white focus:ring-zinc-400">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent className="bg-black border-zinc-900 text-white">
                       <SelectItem value="active">Ativo</SelectItem>
+                      <SelectItem value="pending">Pendente</SelectItem>
                       <SelectItem value="inactive">Inativo</SelectItem>
                     </SelectContent>
                   </Select>
