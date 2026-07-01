@@ -16,8 +16,7 @@ import {
   Loader2,
   Save,
   X,
-  FileText,
-  MessageSquare
+  FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
@@ -64,45 +63,14 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState<string | null>(null);
+
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSendWhatsApp = async (client: Client) => {
-    try {
-      setIsSendingWhatsApp(client.id);
-      const { data: settingsData } = await supabase.from('settings').select('n8n_webhook_url').limit(1);
-      const webhookUrl = settingsData?.[0]?.n8n_webhook_url;
-      if (!webhookUrl) {
-        alert('Configure a URL do webhook do n8n nas Configurações do Sistema antes de fazer disparos!');
-        return;
-      }
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event_type: 'client_whatsapp_manual',
-          first_name: client.first_name,
-          last_name: client.last_name,
-          email: client.email,
-          phone: client.phone
-        })
-      });
-      if (response.ok) {
-        alert('Integração com n8n acionada com sucesso!');
-      } else {
-        alert(`Erro ao acionar n8n: Status ${response.status}`);
-      }
-    } catch (err: any) {
-      console.error(err);
-      alert('Erro de conexão ao enviar dados para o n8n: ' + err.message);
-    } finally {
-      setIsSendingWhatsApp(null);
-    }
-  };
+
   
   // Form states
   const [first_name, setFirstName] = useState('');
@@ -394,20 +362,6 @@ export default function ClientsPage() {
 
                     <TableCell className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleSendWhatsApp(client)}
-                          disabled={isSendingWhatsApp === client.id}
-                          className="h-8 w-8 text-zinc-505 text-zinc-500 hover:text-emerald-400 hover:bg-zinc-900 rounded-lg disabled:opacity-50"
-                          title="Enviar WhatsApp via n8n"
-                        >
-                          {isSendingWhatsApp === client.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
-                          ) : (
-                            <MessageSquare className="w-4 h-4" />
-                          )}
-                        </Button>
                         <Button
                           size="icon"
                           variant="ghost"

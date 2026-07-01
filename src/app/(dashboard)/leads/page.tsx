@@ -161,29 +161,7 @@ export default function LeadsPage() {
       await fetchLeads();
       setIsModalOpen(false);
 
-      // Trigger n8n webhook for new leads
-      if (isNew && savedLead) {
-        const { data: settingsData } = await supabase.from('settings').select('n8n_webhook_url').limit(1);
-        const webhookUrl = settingsData?.[0]?.n8n_webhook_url;
-        if (webhookUrl) {
-          fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              event_type: 'lead_created',
-              id: savedLead.id,
-              first_name: savedLead.first_name,
-              last_name: savedLead.last_name,
-              email: savedLead.email,
-              phone: savedLead.phone,
-              status: savedLead.status,
-              source: savedLead.source,
-              value: savedLead.value,
-              timestamp: new Date().toISOString()
-            })
-          }).catch(err => console.error('n8n Webhook Error:', err));
-        }
-      }
+
 
       if (formData.status === 'closed' && savedLead) {
         setConversionLead(savedLead);

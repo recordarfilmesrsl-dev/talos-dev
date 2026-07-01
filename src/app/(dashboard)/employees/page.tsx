@@ -183,31 +183,7 @@ export default function EmployeesPage() {
             toast.error('Erro de rede ao enviar e-mail de convite.');
           });
 
-          // 2. Trigger n8n webhook for other automations
-          try {
-            const { data: settingsData } = await supabase.from('settings').select('n8n_webhook_url').limit(1);
-            const webhookUrl = settingsData?.[0]?.n8n_webhook_url;
-            if (webhookUrl) {
-              fetch(webhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  event_type: 'employee_invited',
-                  id: savedEmployee.id,
-                  first_name: savedEmployee.first_name,
-                  last_name: savedEmployee.last_name,
-                  email: savedEmployee.email,
-                  phone: savedEmployee.phone,
-                  role: savedEmployee.role,
-                  status: savedEmployee.status,
-                  confirmation_link: confirmationLink,
-                  timestamp: new Date().toISOString()
-                })
-              }).catch(err => console.error('n8n Webhook Error:', err));
-            }
-          } catch (webhookErr) {
-            console.error('Error fetching webhook setting:', webhookErr);
-          }
+
         }
       }
       

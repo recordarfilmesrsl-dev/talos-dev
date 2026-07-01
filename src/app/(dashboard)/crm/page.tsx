@@ -16,7 +16,6 @@ import {
   ArrowRight,
   ClipboardList,
   AlertTriangle,
-  MessageSquare,
   Edit2,
   Trash2,
   FileText
@@ -75,7 +74,7 @@ export default function CRMPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState<string | null>(null);
+
 
   // Conversão de Lead
   const [conversionLead, setConversionLead] = useState<Lead | null>(null);
@@ -233,29 +232,7 @@ export default function CRMPage() {
       await fetchLeads();
       setIsModalOpen(false);
 
-      // Trigger n8n webhook for new leads
-      if (isNew && savedLead) {
-        const { data: settingsData } = await supabase.from('settings').select('n8n_webhook_url').limit(1);
-        const webhookUrl = settingsData?.[0]?.n8n_webhook_url;
-        if (webhookUrl) {
-          fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              event_type: 'lead_created',
-              id: savedLead.id,
-              first_name: savedLead.first_name,
-              last_name: savedLead.last_name,
-              email: savedLead.email,
-              phone: savedLead.phone,
-              status: savedLead.status,
-              source: savedLead.source,
-              value: savedLead.value,
-              timestamp: new Date().toISOString()
-            })
-          }).catch(err => console.error('n8n Webhook Error:', err));
-        }
-      }
+
 
       if (status === 'closed' && savedLead) {
         setConversionLead(savedLead);
@@ -399,27 +376,7 @@ export default function CRMPage() {
       setLeads(prev => prev.map(l => l.id === id ? { ...l, status: newStatus } : l));
       toast.success('Fase do lead atualizada!');
 
-      // Trigger n8n webhook if configured
-      const { data: settingsData } = await supabase.from('settings').select('n8n_webhook_url').limit(1);
-      const webhookUrl = settingsData?.[0]?.n8n_webhook_url;
-      if (webhookUrl) {
-        const lead = leads.find(l => l.id === id);
-        fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            event_type: 'lead_status_changed',
-            id,
-            first_name: lead?.first_name,
-            last_name: lead?.last_name,
-            email: lead?.email,
-            phone: lead?.phone,
-            value: lead?.value,
-            status: newStatus,
-            timestamp: new Date().toISOString()
-          })
-        }).catch(err => console.error('n8n Webhook Error:', err));
-      }
+
     } catch (err) {
       console.error('Error updating lead status:', err);
       toast.error('Erro ao mover lead.');
@@ -428,40 +385,7 @@ export default function CRMPage() {
     }
   };
 
-  const handleSendWhatsApp = async (lead: Lead) => {
-    try {
-      setIsSendingWhatsApp(lead.id);
-      const { data: settingsData } = await supabase.from('settings').select('n8n_webhook_url').limit(1);
-      const webhookUrl = settingsData?.[0]?.n8n_webhook_url;
-      if (!webhookUrl) {
-        toast.error('Configure a URL do webhook do n8n nas Configurações!');
-        return;
-      }
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event_type: 'client_whatsapp_manual',
-          first_name: lead.first_name,
-          last_name: lead.last_name,
-          email: lead.email,
-          phone: lead.phone,
-          value: lead.value,
-          status: lead.status
-        })
-      });
-      if (response.ok) {
-        toast.success('WhatsApp via n8n disparado com sucesso!');
-      } else {
-        toast.error(`Erro: Status ${response.status}`);
-      }
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Erro de conexão ao enviar dados: ' + err.message);
-    } finally {
-      setIsSendingWhatsApp(null);
-    }
-  };
+
 
   const handleNextPhase = (lead: Lead, currentStatus: string) => {
     const nextIdx = columns.findIndex(c => c.id === currentStatus) + 1;
@@ -643,21 +567,7 @@ export default function CRMPage() {
                             >
                               <FileText className="w-4 h-4" />
                             </button>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSendWhatsApp(lead);
-                              }}
-                              disabled={isSendingWhatsApp === lead.id}
-                              className="text-zinc-500 hover:text-emerald-400 p-1 rounded-lg hover:bg-zinc-900 transition-all disabled:opacity-50"
-                              title="Enviar WhatsApp via n8n"
-                            >
-                              {isSendingWhatsApp === lead.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
-                              ) : (
-                                <MessageSquare className="w-4 h-4" />
-                              )}
-                            </button>
+
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();

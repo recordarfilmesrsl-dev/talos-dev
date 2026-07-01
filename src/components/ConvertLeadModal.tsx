@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase';
 import { Loader2, Mail, Key, DollarSign, Calendar, ShieldCheck } from 'lucide-react';
+import { formatCurrencyBRL, parseCurrencyBRL } from '@/lib/utils';
 
 interface Lead {
   id: string;
@@ -39,7 +40,7 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onSuccess }: ConvertLe
   const [password, setPassword] = useState('');
   const [notes, setNotes] = useState('');
   
-  const [monthlyValue, setMonthlyValue] = useState(0);
+  const [monthlyValue, setMonthlyValue] = useState('0');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [billingType, setBillingType] = useState('monthly');
@@ -48,7 +49,7 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onSuccess }: ConvertLe
   useEffect(() => {
     if (lead) {
       setGmail(lead.email || '');
-      setMonthlyValue(Number(lead.value) || 0);
+      setMonthlyValue(lead.value ? Math.round(Number(lead.value) * 100).toString() : '0');
       
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
@@ -110,7 +111,7 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onSuccess }: ConvertLe
         .insert([
           {
             client_id: clientId,
-            monthly_value: monthlyValue,
+            monthly_value: parseCurrencyBRL(monthlyValue),
             start_date: startDate,
             end_date: endDate,
             billing_type: billingType,
@@ -223,12 +224,13 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onSuccess }: ConvertLe
                   <Input
                     required
                     id="monthlyValue"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={monthlyValue}
-                    onChange={(e) => setMonthlyValue(Number(e.target.value))}
+                    type="text"
+                    placeholder="R$ 0,00"
+                    value={formatCurrencyBRL(monthlyValue)}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '');
+                      setMonthlyValue(digits);
+                    }}
                     className="bg-black border-zinc-900 text-white pl-10 focus-visible:ring-zinc-400"
                   />
                 </div>

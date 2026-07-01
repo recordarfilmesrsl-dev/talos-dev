@@ -52,7 +52,6 @@ const menuGroups = [
   {
     label: 'Configurações',
     items: [
-      { icon: Zap, label: 'Automações', href: '/automations' },
       { icon: Settings, label: 'Configurações', href: '/settings' },
     ]
   }

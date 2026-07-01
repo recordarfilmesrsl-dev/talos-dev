@@ -6,12 +6,10 @@ import {
   Building2,
   Mail,
   Phone,
-  Link as LinkIcon,
   Database,
   Save,
   Loader2,
-  CheckCircle2,
-  XCircle
+  CheckCircle2
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -25,7 +23,6 @@ interface SettingsData {
   company_name: string;
   company_email: string;
   company_phone: string;
-  n8n_webhook_url: string;
 }
 
 export default function SettingsPage() {
@@ -37,7 +34,6 @@ export default function SettingsPage() {
   const [companyName, setCompanyName] = useState('');
   const [companyEmail, setCompanyEmail] = useState('');
   const [companyPhone, setCompanyPhone] = useState('');
-  const [n8nWebhookUrl, setN8nWebhookUrl] = useState('');
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -55,7 +51,6 @@ export default function SettingsPage() {
         setCompanyName(item.company_name || '');
         setCompanyEmail(item.company_email || '');
         setCompanyPhone(item.company_phone || '');
-        setN8nWebhookUrl(item.n8n_webhook_url || '');
       }
     } catch (err) {
       console.error('Error fetching settings:', err);
@@ -75,8 +70,7 @@ export default function SettingsPage() {
       const payload = {
         company_name: companyName,
         company_email: companyEmail,
-        company_phone: companyPhone,
-        n8n_webhook_url: n8nWebhookUrl
+        company_phone: companyPhone
       };
 
       if (settingsId) {
@@ -185,36 +179,7 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
 
-              {/* n8n Webhook Settings */}
-              <Card className="bg-zinc-950/50 border-zinc-900 text-white shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-2">
-                    <LinkIcon className="w-4 h-4" />
-                    Integração com n8n (WhatsApp / Automações)
-                  </CardTitle>
-                  <CardDescription className="text-xs text-zinc-500">
-                    Insira a URL do seu webhook do n8n para enviar notificações automáticas de leads e contatos.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="n8nWebhookUrl">URL do Webhook do n8n (WhatsApp)</Label>
-                    <div className="relative">
-                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                      <Input
-                        id="n8nWebhookUrl"
-                        value={n8nWebhookUrl}
-                        onChange={(e) => setN8nWebhookUrl(e.target.value)}
-                        className="bg-black border-zinc-900 text-white pl-10 focus-visible:ring-zinc-400"
-                        placeholder="https://primary-production.n8n.cloud/webhook/..."
-                      />
-                    </div>
-                    <p className="text-[10px] text-zinc-500 mt-1">
-                      Os eventos disparados pelo funil de vendas (CRM) e pela lista de clientes serão enviados via POST JSON para esta URL.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+
 
               <div className="flex justify-end">
                 <Button
@@ -260,25 +225,7 @@ export default function SettingsPage() {
                     </Badge>
                   </div>
 
-                  {/* n8n status */}
-                  <div className="flex items-center justify-between p-3 bg-black/50 border border-zinc-900 rounded-xl">
-                    <div className="flex items-center gap-2.5">
-                      <LinkIcon className="w-4 h-4 text-zinc-400" />
-                      <div className="text-xs">
-                        <p className="font-bold text-white">Integração n8n</p>
-                        <p className="text-[10px] text-zinc-500">Gatilho WhatsApp</p>
-                      </div>
-                    </div>
-                    {n8nWebhookUrl ? (
-                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold uppercase text-[9px] gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Configurado
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-red-500/10 text-red-400 border-red-500/20 font-bold uppercase text-[9px] gap-1">
-                        <XCircle className="w-3 h-3 text-red-400" /> Inativo
-                      </Badge>
-                    )}
-                  </div>
+
                 </CardContent>
               </Card>
             </div>
