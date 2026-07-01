@@ -157,24 +157,43 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       {group.items.map((item) => {
                         const isActive = pathname === item.href;
                         return (
-                          <motion.div key={item.href} variants={itemVariants}>
-                            <SidebarMenuItem>
+                          <motion.div 
+                            key={item.href} 
+                            variants={itemVariants}
+                            whileHover={{ scale: 1.02, x: 4 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="relative"
+                          >
+                            <SidebarMenuItem className="relative z-0">
                               <SidebarMenuButton
                                 render={<Link href={item.href} />}
                                 isActive={isActive}
                                 className={cn(
-                                  "flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group w-full",
+                                  "flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group w-full bg-transparent relative z-10",
                                   isActive
-                                    ? "bg-zinc-900 text-white font-medium"
-                                    : "text-zinc-400 hover:bg-zinc-900/40 hover:text-white"
+                                    ? "text-white font-bold"
+                                    : "text-zinc-400 hover:text-white"
                                 )}
                               >
-                                <div className="flex items-center gap-3">
-                                  <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-zinc-400 group-hover:text-white")} />
+                                <div className="flex items-center gap-3 relative z-10">
+                                  <item.icon className={cn("w-5 h-5 transition-transform duration-200 group-hover:scale-110", isActive ? "text-white" : "text-zinc-400 group-hover:text-white")} />
                                   <span className="font-medium">{item.label}</span>
                                 </div>
-                                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white ml-auto" />}
+                                {isActive && (
+                                  <motion.div 
+                                    layoutId="activeDot"
+                                    className="w-1.5 h-1.5 rounded-full bg-white ml-auto relative z-10 shadow-[0_0_8px_rgba(255,255,255,0.8)]" 
+                                  />
+                                )}
                               </SidebarMenuButton>
+
+                              {isActive && (
+                                <motion.div
+                                  layoutId="activePill"
+                                  className="absolute inset-0 bg-gradient-to-r from-zinc-900 to-zinc-950/40 border border-zinc-800/80 rounded-xl -z-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_4px_20px_-2px_rgba(0,0,0,0.5)]"
+                                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                />
+                              )}
                             </SidebarMenuItem>
                           </motion.div>
                         );
