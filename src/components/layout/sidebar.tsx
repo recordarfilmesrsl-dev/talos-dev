@@ -14,7 +14,8 @@ import {
   FileText,
   Briefcase,
   ClipboardList,
-  FolderKanban
+  FolderKanban,
+  ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -28,6 +29,7 @@ import {
   SidebarMenuItem,
   SidebarFooter,
 } from '@/components/ui/sidebar';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const menuGroups = [
   {
@@ -57,8 +59,58 @@ const menuGroups = [
   }
 ];
 
+const itemVariants = {
+  open: {
+    opacity: 1,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: { type: "spring" as const, stiffness: 300, damping: 24 }
+  },
+  closed: {
+    opacity: 0,
+    scale: 0.3,
+    filter: "blur(20px)",
+    transition: { duration: 0.2 }
+  }
+};
+
+const listVariants = {
+  open: {
+    height: "auto",
+    opacity: 1,
+    transition: {
+      type: "spring" as const,
+      bounce: 0,
+      duration: 0.4,
+      delayChildren: 0.1,
+      staggerChildren: 0.05
+    }
+  },
+  closed: {
+    height: 0,
+    opacity: 0,
+    transition: {
+      duration: 0.2,
+      staggerDirection: -1 as const,
+      staggerChildren: 0.03
+    }
+  }
+};
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
+  const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({
+    'Menu Principal': true,
+    'Gestão': true,
+    'Configurações': true,
+  });
+
+  const toggleGroup = (label: string) => {
+    setOpenGroups(prev => ({
+      ...prev,
+      [label]: !prev[label]
+    }));
+  };
 
   return (
     <Sidebar className="border-r border-zinc-900 bg-black" {...props}>
@@ -72,38 +124,68 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent className="px-4">
-        {menuGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-3 mb-2">
-              {group.label}
-            </SidebarGroupLabel>
-            <SidebarMenu>
-              {group.items.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      render={<Link href={item.href} />}
-                      isActive={isActive}
-                      className={cn(
-                        "flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group w-full",
-                        isActive
-                          ? "bg-zinc-900 text-white font-medium"
-                          : "text-zinc-400 hover:bg-zinc-900/40 hover:text-white"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-zinc-400 group-hover:text-white")} />
-                        <span className="font-medium">{item.label}</span>
-                      </div>
-                      {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white ml-auto" />}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroup>
-        ))}
+        {menuGroups.map((group) => {
+          const isOpen = !!openGroups[group.label];
+          return (
+            <SidebarGroup key={group.label} className="transition-all duration-300">
+              <div 
+                onClick={() => toggleGroup(group.label)}
+                className="flex items-center justify-between cursor-pointer group/label py-1"
+              >
+                <SidebarGroupLabel className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-3 mb-2 cursor-pointer group-hover/label:text-zinc-300 transition-colors">
+                  {group.label}
+                </SidebarGroupLabel>
+                <motion.div
+                  animate={{ rotate: isOpen ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-zinc-500 group-hover/label:text-zinc-300 mr-2 mb-2"
+                >
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </motion.div>
+              </div>
+              <AnimatePresence initial={false}>
+                {isOpen && (
+                  <motion.div
+                    key={group.label}
+                    initial="closed"
+                    animate="open"
+                    exit="closed"
+                    variants={listVariants}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <SidebarMenu>
+                      {group.items.map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
+                          <motion.div key={item.href} variants={itemVariants}>
+                            <SidebarMenuItem>
+                              <SidebarMenuButton
+                                render={<Link href={item.href} />}
+                                isActive={isActive}
+                                className={cn(
+                                  "flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group w-full",
+                                  isActive
+                                    ? "bg-zinc-900 text-white font-medium"
+                                    : "text-zinc-400 hover:bg-zinc-900/40 hover:text-white"
+                                )}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-zinc-400 group-hover:text-white")} />
+                                  <span className="font-medium">{item.label}</span>
+                                </div>
+                                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white ml-auto" />}
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          </motion.div>
+                        );
+                      })}
+                    </SidebarMenu>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
 
       <SidebarFooter className="p-4 mt-auto">
